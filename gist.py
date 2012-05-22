@@ -39,8 +39,8 @@ def create_gabor(ori, img_size):
     param = numpy.delete(param, 0, 0)    #remove the first empty row
 
     #Frequencies
-    rng_x = range(-img_size[0]/2, img_size[0]/2)
-    rng_y = range(-img_size[1]/2, img_size[1]/2)
+    rng_x = range(-img_size[1]/2, img_size[1]/2)
+    rng_y = range(-img_size[0]/2, img_size[0]/2)
     f_x, f_y = numpy.meshgrid(rng_x, rng_y)
     f_r = numpy.fft.fftshift(numpy.sqrt(numpy.power(f_x, 2) + numpy.power(f_y, 2)))
     f_t = numpy.fft.fftshift(numpy.angle(f_x + complex(0, 1) * f_y))
@@ -51,6 +51,15 @@ def create_gabor(ori, img_size):
         trans = f_t + param[i_ind, 3]
         trans = trans + 2 * numpy.pi * (trans < -numpy.pi) - 2 * numpy.pi * (trans > numpy.pi)
 
+
+        a= -10 * param[i_ind, 0]
+        b = numpy.power((f_r / img_size[1] / param[i_ind, 1] -1), 2)
+        c = - 2 * param[i_ind, 2]
+        d = numpy.pi * numpy.power(trans, 2)
+        e =c * b
+        f = c * d
+        #import ipdb
+        #ipdb.set_trace()
         gabor[:, :, i_ind] = numpy.exp(-10 * param[i_ind, 0] * numpy.power((f_r / img_size[1]
                              / param[i_ind, 1] - 1), 2) - 2 * param[i_ind, 2]
                              * numpy.pi * numpy.power(trans, 2))
@@ -209,13 +218,10 @@ def _im_resize_crop(img, size, method = 'bilinear'):
     resize and crop an image
     """
 
-    if numpy.ndim(size) == 0:
-        size = (size, size)
-
     scaling = max(float(size[0]) / img.shape[0], float(size[1]) / img.shape[1])
 
     new_size = numpy.round((img.shape[0] * scaling, img.shape[1] * scaling)).astype(int)
-    # TODO imresize just work with integers and we use some perscion here
+    # TODO imresize just work with integers and we loose some perscion here
     img = scipy.misc.imresize(img, new_size, method, mode = 'F')
     sr = numpy.floor((img.shape[0] - size[0]) / 2.)
     sc = numpy.floor((img.shape[1] - size[1]) / 2.)
@@ -224,17 +230,27 @@ def _im_resize_crop(img, size, method = 'bilinear'):
     return img
 
 
-def gist(img, orientations = (8,8,8,8), num_blocks = 4, fc_prefilt = 4,
+def gist(image_path, orientations = (8,8,8,8), num_blocks = 4, fc_prefilt = 4,
             boundary_extension = 32, image_size = None ):
     """
     Compute gist representation of image.
     Both RGB and gray scale images are accepted.
     """
 
-    if image_size != None:
-        img = _im_resize_crop(img, image_size, 'blinear')
-    else:
+    img = Image.open(image_path)
+    img = numpy.asarray(img, dtype = float)
+    img = img.mean(axis = 2)
+
+    if image_size == None:
         image_size = numpy.asarray(img.shape)
+
+    if numpy.ndim(image_size) == 0:
+        image_size = numpy.asarray((image_size, image_size))
+
+    # prepare image
+    img = _im_resize_crop(img, image_size, 'bilinear')
+    img = img - img.min()
+    img =   255. * img / img.max()
 
     gabor = create_gabor(orientations, image_size + 2 * boundary_extension)
     output = prefilt(img, fc_prefilt)
@@ -251,12 +267,12 @@ def test(img_path):
     fc_prefilt = 4
     boundary_extension = 32
 
-    img = Image.open(img_path)
-    img = numpy.asarray(img, dtype = float)
-    img = img.mean(axis = 2)
-    img = _im_resize_crop(img, image_size, 'bilinear')
-    img = img - img.min()
-    img =   255. * img / img.max()
+    #img = Image.open(img_path)
+    #img = numpy.asarray(img, dtype = float)
+    #img = img.mean(axis = 2)
+    #img = _im_resize_crop(img, image_size, 'bilinear')
+    #img = img - img.min()
+    #img =   255. * img / img.max()
 
     print gist(img)
 
