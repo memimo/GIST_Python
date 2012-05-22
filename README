@@ -1,2 +1,8 @@
 Re-implementation of GIST for scene recognition for orignal Matlab code in Python
 http://people.csail.mit.edu/torralba/code/spatialenvelope/
+
+Tests:
+
+matlab/test.py compare the result with the matlab results. In order to run this you need to save results of demoGist.m in a mat file.
+
+test/benchmark.py evaluate run time speed of this code
