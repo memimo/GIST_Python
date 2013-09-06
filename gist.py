@@ -8,7 +8,9 @@ The module has been re-implemented from the Matlab sources available
 from authors, and has been tested on the same dataset from authors.
 """
 
-import os, Image, numpy, scipy
+import os
+import numpy, scipy
+from PIL import Image, ImageChops
 
 def create_gabor(ori, img_size):
     ''' create_gabor(numberOfOrientationsPerScale, img_siz);
@@ -259,6 +261,17 @@ def gist(image_path, orientations = (8,8,8,8), num_blocks = 4, fc_prefilt = 4,
     return gist.flatten()
 
 
+
+def trim(im, border):
+    """
+    https://gist.github.com/mattjmorrison/932345
+    """
+    bg = Image.new(im.mode, im.size, border)
+    diff = ImageChops.difference(im, bg)
+    bbox = diff.getbbox()
+    if bbox:
+        return im.crop(bbox)
+
 def test(img_path):
 
     image_size = (256, 256)
@@ -267,16 +280,13 @@ def test(img_path):
     fc_prefilt = 4
     boundary_extension = 32
 
-    #img = Image.open(img_path)
-    #img = numpy.asarray(img, dtype = float)
-    #img = img.mean(axis = 2)
-    #img = _im_resize_crop(img, image_size, 'bilinear')
-    #img = img - img.min()
-    #img =   255. * img / img.max()
+    img = Image.open(img_path)
+    img = trim(img, 256)
+    img.save('_temp.jpg')
 
-    print gist(img)
+    print gist('_temp.jpg')
 
 
 if __name__ == '__main__':
 
-    test(img_path)
+    test("sea.jpg")
